@@ -1,73 +1,152 @@
 import AppKit
+import IOKit.pwr_mgt
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let menu = NSMenu()
     private var timer: Timer?
-    private var disabled = false          // current SleepDisabled
+    private var tickCount = 0
+
+    // Session
+    private var active = false
+    private var endDate: Date?
+    private var assertions: [IOPMAssertionID] = []
+    private var weSetLid = false
+
+    // Observed system state
+    private var lidSleepDisabled = false   // pmset SleepDisabled
     private var ruleInstalled = false
 
+    // MARK: - Lifecycle
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let menu = NSMenu()
         menu.delegate = self
-        statusItem.menu = menu
-
-        refresh()
-        applyLaunchBehavior()
-
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            self?.tick()
+        if let button = statusItem.button {
+            button.target = self
+            button.action = #selector(statusClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-    }
-
-    // MARK: - State
-
-    private func refresh() {
-        disabled = Pmset.isSleepDisabled() ?? disabled
-        ruleInstalled = Pmset.canToggleWithoutPassword()
+        pollSystem()
+        applyLaunchBehavior()
         updateIcon()
+
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
     }
 
-    private func tick() {
-        let before = disabled
-        refresh()
-        if disabled != before { Settings.lastState = disabled }
-        checkBattery()
+    func applicationWillTerminate(_ notification: Notification) {
+        releaseAssertions()
+        if weSetLid { Pmset.setSleepDisabled(false) }
     }
 
     private func applyLaunchBehavior() {
-        guard ruleInstalled else { return }
-        let target: Bool
         switch Settings.launchBehavior {
-        case .on: target = true
-        case .off: target = false
-        case .last: target = Settings.lastState
+        case .on:
+            activate()
+        case .last:
+            if Settings.lastActive { activate() } else { clearStaleLid() }
+        case .off:
+            clearStaleLid()
         }
-        if target != disabled { set(target) }
+    }
+
+    /// After a crash or reboot SleepDisabled can still be 1 while we're inactive.
+    private func clearStaleLid() {
+        if lidSleepDisabled && ruleInstalled { Pmset.setSleepDisabled(false); pollSystem() }
+    }
+
+    // MARK: - Tick
+
+    private func tick() {
+        tickCount += 1
+        if active, let end = endDate, Date() >= end {
+            deactivate(userInitiated: false)
+        }
+        if tickCount % 3 == 0 {
+            pollSystem()
+            checkBattery()
+        }
+        updateIcon()
+    }
+
+    private func pollSystem() {
+        lidSleepDisabled = Pmset.isSleepDisabled() ?? lidSleepDisabled
+        ruleInstalled = Pmset.canToggleWithoutPassword()
     }
 
     private func checkBattery() {
-        guard disabled, Settings.lowBatteryProtection,
+        guard active, Settings.lowBatteryProtection,
               let b = Battery.status(), !b.onAC, b.percent <= Settings.lowBatteryThreshold else { return }
-        _ = b
-        set(false)
+        deactivate(userInitiated: false)
     }
 
-    @discardableResult
-    private func set(_ on: Bool) -> Bool {
-        if !ruleInstalled {
-            guard installRuleInteractively() else { return false }
+    // MARK: - Session control
+
+    private func toggleActive() {
+        if active { deactivate(userInitiated: true) } else { activate() }
+    }
+
+    private func activate() {
+        createAssertions()
+        active = true
+        startTimer()
+        Settings.lastActive = true
+        applyLid()
+        updateIcon()
+    }
+
+    private func deactivate(userInitiated: Bool) {
+        releaseAssertions()
+        active = false
+        endDate = nil
+        Settings.lastActive = false
+        applyLid()
+        updateIcon()
+    }
+
+    private func startTimer() {
+        let secs = Settings.duration
+        endDate = secs > 0 ? Date().addingTimeInterval(TimeInterval(secs)) : nil
+    }
+
+    /// Syncs `pmset disablesleep` with (active && lidMode).
+    private func applyLid() {
+        let want = active && Settings.lidMode
+        if want {
+            if !ruleInstalled && !installRuleInteractively() {
+                Settings.lidMode = false
+                return
+            }
+            weSetLid = true
+            if !lidSleepDisabled { Pmset.setSleepDisabled(true) }
+        } else if weSetLid {
+            weSetLid = false
+            if ruleInstalled { Pmset.setSleepDisabled(false) }
         }
-        let ok = Pmset.setSleepDisabled(on)
-        refresh()
-        if ok { Settings.lastState = disabled }
-        return ok
+        pollSystem()
+    }
+
+    private func createAssertions() {
+        releaseAssertions()
+        var types = [kIOPMAssertionTypePreventUserIdleSystemSleep as String]
+        if Settings.keepDisplayOn { types.append(kIOPMAssertionTypePreventUserIdleDisplaySleep as String) }
+        for type in types {
+            var id: IOPMAssertionID = 0
+            let r = IOPMAssertionCreateWithName(type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                                                "NoLidSleep keeping Mac awake" as CFString, &id)
+            if r == kIOReturnSuccess { assertions.append(id) }
+        }
+    }
+
+    private func releaseAssertions() {
+        assertions.forEach { IOPMAssertionRelease($0) }
+        assertions.removeAll()
     }
 
     private func installRuleInteractively() -> Bool {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "One-time setup"
-        alert.informativeText = "NoLidSleep needs to add a sudoers rule so it can run only “pmset disablesleep 0/1” without asking for a password each time. You'll be asked for your admin password once."
+        alert.informativeText = "To keep your Mac awake with the lid closed, NoLidSleep needs a sudoers rule that allows only “pmset disablesleep 0/1” without a password. You'll be asked for your admin password once."
         alert.addButton(withTitle: "Continue")
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return false }
@@ -80,71 +159,132 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        let name = disabled ? "laptopcomputer" : "laptopcomputer.slash"
+        let name: String
+        if lidSleepDisabled { name = "laptopcomputer" }
+        else { name = active ? "cup.and.saucer.fill" : "cup.and.saucer" }
         let img = NSImage(systemSymbolName: name, accessibilityDescription: "NoLidSleep")
             ?? NSImage(systemSymbolName: "laptopcomputer", accessibilityDescription: "NoLidSleep")
         img?.isTemplate = true
         button.image = img
-        button.toolTip = disabled ? "Lid-closed sleep disabled (SleepDisabled = 1)" : "Lid-closed sleep allowed (SleepDisabled = 0)"
+        button.toolTip = statusText()
     }
 
-    // MARK: - Menu
+    private func statusText() -> String {
+        var s: String
+        if active {
+            if let end = endDate { s = "Awake · \(Self.format(end.timeIntervalSinceNow)) left" }
+            else { s = "Awake · until turned off" }
+        } else {
+            s = "Off"
+        }
+        if lidSleepDisabled { s += " · lid closed won't sleep" }
+        return s
+    }
+
+    private static func format(_ interval: TimeInterval) -> String {
+        let mins = Int((max(interval, 0) / 60).rounded(.up))
+        if mins >= 60 { return "\(mins / 60)h \(mins % 60)m" }
+        return "\(max(mins, 1))m"
+    }
+
+    // MARK: - Click / Menu
+
+    @objc private func statusClicked(_ sender: NSStatusBarButton) {
+        let e = NSApp.currentEvent
+        if e?.type == .rightMouseUp || e?.modifierFlags.contains(.control) == true {
+            statusItem.menu = menu
+            sender.performClick(nil)
+            statusItem.menu = nil
+        } else {
+            toggleActive()
+        }
+    }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        refresh()
+        pollSystem()
         menu.removeAllItems()
 
-        let status = NSMenuItem(title: disabled ? "Awake with lid closed" : "Sleeps normally when lid closes", action: nil, keyEquivalent: "")
+        let status = NSMenuItem(title: statusText(), action: nil, keyEquivalent: "")
         status.isEnabled = false
         menu.addItem(status)
 
-        let toggle = NSMenuItem(title: "Keep Awake with Lid Closed", action: #selector(toggleSleep), keyEquivalent: "")
-        toggle.target = self
-        toggle.state = disabled ? .on : .off
-        menu.addItem(toggle)
+        add(menu, active ? "Turn Off" : "Keep Mac Awake", #selector(menuToggleActive))
+
+        let lid = add(menu, "Also Keep Awake with Lid Closed", #selector(menuToggleLid))
+        lid.state = Settings.lidMode ? .on : .off
+        lid.isEnabled = active
+        lid.indentationLevel = 1
+
+        let durationItem = NSMenuItem(title: "Duration", action: nil, keyEquivalent: "")
+        let durationMenu = NSMenu()
+        for opt in Duration.options {
+            let item = add(durationMenu, opt.title, #selector(pickDuration(_:)))
+            item.tag = opt.seconds
+            item.state = Settings.duration == opt.seconds ? .on : .off
+        }
+        durationItem.submenu = durationMenu
+        menu.addItem(durationItem)
+
+        let disp = add(menu, "Keep Display On", #selector(menuToggleDisplay))
+        disp.state = Settings.keepDisplayOn ? .on : .off
         menu.addItem(.separator())
 
-        let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLogin), keyEquivalent: "")
-        login.target = self
+        let login = add(menu, "Launch at Login", #selector(menuToggleLogin))
         login.state = Settings.launchAtLogin ? .on : .off
-        menu.addItem(login)
 
         let behaviorItem = NSMenuItem(title: "On Launch", action: nil, keyEquivalent: "")
         let sub = NSMenu()
         for b in LaunchBehavior.allCases {
-            let item = NSMenuItem(title: b.title, action: #selector(pickBehavior(_:)), keyEquivalent: "")
-            item.target = self
+            let item = add(sub, b.title, #selector(pickBehavior(_:)))
             item.representedObject = b.rawValue
             item.state = Settings.launchBehavior == b ? .on : .off
-            sub.addItem(item)
         }
         behaviorItem.submenu = sub
         menu.addItem(behaviorItem)
 
         if Battery.status() != nil {
-            let bat = NSMenuItem(title: "Turn Off Below \(Settings.lowBatteryThreshold)% Battery", action: #selector(toggleBattery), keyEquivalent: "")
-            bat.target = self
+            let bat = add(menu, "Turn Off Below \(Settings.lowBatteryThreshold)% Battery", #selector(menuToggleBattery))
             bat.state = Settings.lowBatteryProtection ? .on : .off
-            menu.addItem(bat)
         }
         menu.addItem(.separator())
 
-        let rule = NSMenuItem(
-            title: ruleInstalled ? "Remove Passwordless Rule…" : "Set Up Passwordless Toggle…",
-            action: #selector(toggleRule), keyEquivalent: "")
-        rule.target = self
-        menu.addItem(rule)
+        add(menu, ruleInstalled ? "Remove Passwordless Rule…" : "Set Up Lid Mode Permission…", #selector(menuToggleRule))
         menu.addItem(.separator())
-
-        let quit = NSMenuItem(title: "Quit NoLidSleep", action: #selector(quit), keyEquivalent: "q")
-        quit.target = self
-        menu.addItem(quit)
+        let quit = add(menu, "Quit NoLidSleep", #selector(menuQuit))
+        quit.keyEquivalent = "q"
     }
 
-    @objc private func toggleSleep() { set(!disabled) }
-    @objc private func toggleLogin() { Settings.launchAtLogin.toggle() }
-    @objc private func toggleBattery() { Settings.lowBatteryProtection.toggle() }
-    @objc private func quit() { NSApp.terminate(nil) }
+    @discardableResult
+    private func add(_ menu: NSMenu, _ title: String, _ action: Selector) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+        return item
+    }
+
+    @objc private func menuToggleActive() { toggleActive() }
+
+    @objc private func menuToggleLid() {
+        guard active else { return }
+        Settings.lidMode.toggle()
+        applyLid()
+        updateIcon()
+    }
+
+    @objc private func pickDuration(_ sender: NSMenuItem) {
+        Settings.duration = sender.tag
+        if active { startTimer() }
+        updateIcon()
+    }
+
+    @objc private func menuToggleDisplay() {
+        Settings.keepDisplayOn.toggle()
+        if active { createAssertions() }
+    }
+
+    @objc private func menuToggleLogin() { Settings.launchAtLogin.toggle() }
+    @objc private func menuToggleBattery() { Settings.lowBatteryProtection.toggle() }
+    @objc private func menuQuit() { NSApp.terminate(nil) }
 
     @objc private func pickBehavior(_ sender: NSMenuItem) {
         if let raw = sender.representedObject as? String, let b = LaunchBehavior(rawValue: raw) {
@@ -152,7 +292,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func toggleRule() {
+    @objc private func menuToggleRule() {
         if ruleInstalled {
             _ = Pmset.removeRule()
             ruleInstalled = Pmset.canToggleWithoutPassword()

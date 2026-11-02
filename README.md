@@ -3,15 +3,17 @@
 Menu bar toggle for `sudo pmset disablesleep 1|0`, so your Mac keeps running with the lid closed.
 Unlike Caffeine-style apps, this stops clamshell sleep itself.
 
-- Menu bar icon: laptop = awake with lid closed (`SleepDisabled 1`), slashed laptop = normal (`0`). Re-read from `pmset -g` every 3 s, so changes made in Terminal show up too.
-- Click the icon to toggle.
-- **Launch at Login** (macOS 13+, `SMAppService`).
-- **On Launch**: Turn On / Turn Off / Remember Last State (needs Launch at Login to take effect at boot).
-- Optional: turn off automatically below 20% battery when unplugged.
+Works like KeepingYouAwake, with an extra lid-closed mode:
+
+- **Left-click** the icon: start/stop keeping the Mac awake (empty cup = off, filled cup = awake). **Right-click** (or Ctrl-click): menu.
+- **Also Keep Awake with Lid Closed**: only selectable while awake. Runs `pmset disablesleep 1`; the icon becomes a laptop. Turning the session off (or when it expires) restores `disablesleep 0`.
+- **Duration**: 15 min ... 12 h, or Infinite. Applies to the whole session including lid mode; a countdown shows in the tooltip and menu.
+- **Keep Display On**, **Launch at Login**, **On Launch** (Start Awake / Start Off / Remember Last State).
+- Auto-stops below 20% battery when unplugged (can be disabled).
 
 ## Passwordless toggle
 
-On first toggle, the app asks for your admin password once and writes `/etc/sudoers.d/nolidsleep`,
+The first time you enable lid mode, the app asks for your admin password once and writes `/etc/sudoers.d/nolidsleep`,
 which allows only `pmset disablesleep 0` and `pmset disablesleep 1` for your user. Remove it from the menu any time
 (or `sudo rm /etc/sudoers.d/nolidsleep`).
 
