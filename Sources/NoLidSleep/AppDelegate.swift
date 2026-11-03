@@ -4,32 +4,29 @@ import IOKit.pwr_mgt
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
+    private let toast = Toast()
     private var timer: Timer?
     private var tickCount = 0
 
     // Session
-    private var active = false
+    private var mode: Mode = .off
+    private var duration = 0                 // seconds, 0 = infinite
     private var endDate: Date?
     private var assertions: [IOPMAssertionID] = []
     private var weSetLid = false
 
     // Observed system state
-    private var lidSleepDisabled = false   // pmset SleepDisabled
+    private var lidSleepDisabled = false     // pmset SleepDisabled
     private var ruleInstalled = false
 
     // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
-        if let button = statusItem.button {
-            button.target = self
-            button.action = #selector(statusClicked(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        }
+        statusItem.menu = menu
         pollSystem()
         applyLaunchBehavior()
         updateIcon()
-
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
     }
 
@@ -40,16 +37,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func applyLaunchBehavior() {
         switch Settings.launchBehavior {
-        case .on:
-            activate()
+        case .awake: start(.awake, seconds: Settings.lastDuration, announce: false)
+        case .lid: start(.lid, seconds: Settings.lastDuration, announce: false)
         case .last:
-            if Settings.lastActive { activate() } else { clearStaleLid() }
-        case .off:
-            clearStaleLid()
+            if Settings.lastMode != .off { start(Settings.lastMode, seconds: Settings.lastDuration, announce: false) }
+            else { clearStaleLid() }
+        case .off: clearStaleLid()
         }
     }
 
-    /// After a crash or reboot SleepDisabled can still be 1 while we're inactive.
+    /// After a crash or reboot SleepDisabled can still be 1 while we're off.
     private func clearStaleLid() {
         if lidSleepDisabled && ruleInstalled { Pmset.setSleepDisabled(false); pollSystem() }
     }
@@ -58,9 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func tick() {
         tickCount += 1
-        if active, let end = endDate, Date() >= end {
-            deactivate(userInitiated: false)
-        }
+        if mode != .off, let end = endDate, Date() >= end { stop() }
         if tickCount % 3 == 0 {
             pollSystem()
             checkBattery()
@@ -74,48 +69,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func checkBattery() {
-        guard active, Settings.lowBatteryProtection,
+        guard mode != .off, Settings.lowBatteryProtection,
               let b = Battery.status(), !b.onAC, b.percent <= Settings.lowBatteryThreshold else { return }
-        deactivate(userInitiated: false)
+        stop()
     }
 
     // MARK: - Session control
 
-    private func toggleActive() {
-        if active { deactivate(userInitiated: true) } else { activate() }
-    }
+    private func start(_ newMode: Mode, seconds: Int, announce: Bool = true) {
+        guard newMode != .off else { stop(); return }
+        if newMode == .lid && !ruleInstalled && !installRuleInteractively() { return }
 
-    private func activate() {
         createAssertions()
-        active = true
-        startTimer()
-        Settings.lastActive = true
-        applyLid()
+        mode = newMode
+        duration = seconds
+        endDate = seconds > 0 ? Date().addingTimeInterval(TimeInterval(seconds)) : nil
+        Settings.lastMode = newMode
+        Settings.lastDuration = seconds
+        syncLid()
         updateIcon()
+        if announce { announceState() }
     }
 
-    private func deactivate(userInitiated: Bool) {
+    private func stop() {
         releaseAssertions()
-        active = false
+        mode = .off
         endDate = nil
-        Settings.lastActive = false
-        applyLid()
+        Settings.lastMode = .off
+        syncLid()
         updateIcon()
+        announceState()
     }
 
-    private func startTimer() {
-        let secs = Settings.duration
-        endDate = secs > 0 ? Date().addingTimeInterval(TimeInterval(secs)) : nil
-    }
-
-    /// Syncs `pmset disablesleep` with (active && lidMode).
-    private func applyLid() {
-        let want = active && Settings.lidMode
-        if want {
-            if !ruleInstalled && !installRuleInteractively() {
-                Settings.lidMode = false
-                return
-            }
+    /// Makes `pmset disablesleep` match the current mode.
+    private func syncLid() {
+        if mode == .lid {
             weSetLid = true
             if !lidSleepDisabled { Pmset.setSleepDisabled(true) }
         } else if weSetLid {
@@ -125,11 +113,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         pollSystem()
     }
 
+    private func announceState() {
+        var text = mode.toast
+        if mode != .off { text += " · " + Duration.title(duration) }
+        toast.show(text, below: statusItem.button)
+    }
+
     private func createAssertions() {
         releaseAssertions()
-        var types = [kIOPMAssertionTypePreventUserIdleSystemSleep as String]
-        if Settings.keepDisplayOn { types.append(kIOPMAssertionTypePreventUserIdleDisplaySleep as String) }
-        for type in types {
+        for type in [kIOPMAssertionTypePreventUserIdleSystemSleep, kIOPMAssertionTypePreventUserIdleDisplaySleep] {
             var id: IOPMAssertionID = 0
             let r = IOPMAssertionCreateWithName(type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
                                                 "NoLidSleep keeping Mac awake" as CFString, &id)
@@ -159,26 +151,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
+        // Reflect reality: SleepDisabled=1 always shows the lid icon.
         let name: String
-        if lidSleepDisabled { name = "laptopcomputer" }
-        else { name = active ? "cup.and.saucer.fill" : "cup.and.saucer" }
+        if mode == .lid || (mode == .off && lidSleepDisabled) { name = "laptopcomputer" }
+        else if mode == .awake { name = "sun.max.fill" }
+        else { name = "moon.zzz" }
         let img = NSImage(systemSymbolName: name, accessibilityDescription: "NoLidSleep")
-            ?? NSImage(systemSymbolName: "laptopcomputer", accessibilityDescription: "NoLidSleep")
         img?.isTemplate = true
         button.image = img
         button.toolTip = statusText()
     }
 
     private func statusText() -> String {
-        var s: String
-        if active {
-            if let end = endDate { s = "Awake · \(Self.format(end.timeIntervalSinceNow)) left" }
-            else { s = "Awake · until turned off" }
-        } else {
-            s = "Off"
+        guard mode != .off else {
+            return lidSleepDisabled ? "Off · lid sleep still disabled by something else" : "Off · sleep allowed"
         }
-        if lidSleepDisabled { s += " · lid closed won't sleep" }
-        return s
+        let base = mode == .lid ? "Awake, even lid closed" : "Awake"
+        if let end = endDate { return "\(base) · \(Self.format(end.timeIntervalSinceNow)) left" }
+        return "\(base) · until turned off"
     }
 
     private static func format(_ interval: TimeInterval) -> String {
@@ -187,18 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return "\(max(mins, 1))m"
     }
 
-    // MARK: - Click / Menu
-
-    @objc private func statusClicked(_ sender: NSStatusBarButton) {
-        let e = NSApp.currentEvent
-        if e?.type == .rightMouseUp || e?.modifierFlags.contains(.control) == true {
-            statusItem.menu = menu
-            sender.performClick(nil)
-            statusItem.menu = nil
-        } else {
-            toggleActive()
-        }
-    }
+    // MARK: - Menu
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         pollSystem()
@@ -207,26 +186,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let status = NSMenuItem(title: statusText(), action: nil, keyEquivalent: "")
         status.isEnabled = false
         menu.addItem(status)
+        menu.addItem(.separator())
 
-        add(menu, active ? "Turn Off" : "Keep Mac Awake", #selector(menuToggleActive))
-
-        let lid = add(menu, "Also Keep Awake with Lid Closed", #selector(menuToggleLid))
-        lid.state = Settings.lidMode ? .on : .off
-        lid.isEnabled = active
-        lid.indentationLevel = 1
-
-        let durationItem = NSMenuItem(title: "Duration", action: nil, keyEquivalent: "")
-        let durationMenu = NSMenu()
-        for opt in Duration.options {
-            let item = add(durationMenu, opt.title, #selector(pickDuration(_:)))
-            item.tag = opt.seconds
-            item.state = Settings.duration == opt.seconds ? .on : .off
-        }
-        durationItem.submenu = durationMenu
-        menu.addItem(durationItem)
-
-        let disp = add(menu, "Keep Display On", #selector(menuToggleDisplay))
-        disp.state = Settings.keepDisplayOn ? .on : .off
+        let off = add(menu, "Sleep Allowed (Off)", #selector(pickOff))
+        off.state = mode == .off ? .on : .off
+        menu.addItem(durationMenuItem("Disable Sleep", .awake))
+        menu.addItem(durationMenuItem("Disable Sleep, Even Lid Closed", .lid))
         menu.addItem(.separator())
 
         let login = add(menu, "Launch at Login", #selector(menuToggleLogin))
@@ -243,15 +208,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(behaviorItem)
 
         if Battery.status() != nil {
-            let bat = add(menu, "Turn Off Below \(Settings.lowBatteryThreshold)% Battery", #selector(menuToggleBattery))
+            let bat = add(menu, "Stop Below \(Settings.lowBatteryThreshold)% Battery", #selector(menuToggleBattery))
             bat.state = Settings.lowBatteryProtection ? .on : .off
         }
-        menu.addItem(.separator())
-
-        add(menu, ruleInstalled ? "Remove Passwordless Rule…" : "Set Up Lid Mode Permission…", #selector(menuToggleRule))
+        if ruleInstalled { add(menu, "Remove Lid Permission…", #selector(menuRemoveRule)) }
         menu.addItem(.separator())
         let quit = add(menu, "Quit NoLidSleep", #selector(menuQuit))
         quit.keyEquivalent = "q"
+    }
+
+    private func durationMenuItem(_ title: String, _ target: Mode) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.state = mode == target ? .on : .off
+        let sub = NSMenu()
+        for opt in Duration.options {
+            let d = add(sub, opt.title, #selector(pickDuration(_:)))
+            d.tag = opt.seconds
+            d.representedObject = target.rawValue
+            d.state = (mode == target && duration == opt.seconds) ? .on : .off
+        }
+        item.submenu = sub
+        return item
     }
 
     @discardableResult
@@ -262,24 +239,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
-    @objc private func menuToggleActive() { toggleActive() }
-
-    @objc private func menuToggleLid() {
-        guard active else { return }
-        Settings.lidMode.toggle()
-        applyLid()
-        updateIcon()
-    }
+    @objc private func pickOff() { stop() }
 
     @objc private func pickDuration(_ sender: NSMenuItem) {
-        Settings.duration = sender.tag
-        if active { startTimer() }
-        updateIcon()
-    }
-
-    @objc private func menuToggleDisplay() {
-        Settings.keepDisplayOn.toggle()
-        if active { createAssertions() }
+        guard let raw = sender.representedObject as? String, let m = Mode(rawValue: raw) else { return }
+        start(m, seconds: sender.tag)
     }
 
     @objc private func menuToggleLogin() { Settings.launchAtLogin.toggle() }
@@ -292,12 +256,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func menuToggleRule() {
-        if ruleInstalled {
-            _ = Pmset.removeRule()
-            ruleInstalled = Pmset.canToggleWithoutPassword()
-        } else {
-            _ = installRuleInteractively()
-        }
+    @objc private func menuRemoveRule() {
+        if mode == .lid { stop() }
+        _ = Pmset.removeRule()
+        ruleInstalled = Pmset.canToggleWithoutPassword()
     }
 }

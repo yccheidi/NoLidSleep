@@ -3,17 +3,22 @@
 Menu bar toggle for `sudo pmset disablesleep 1|0`, so your Mac keeps running with the lid closed.
 Unlike Caffeine-style apps, this stops clamshell sleep itself.
 
-Works like KeepingYouAwake, with an extra lid-closed mode:
+Three states, each stronger than the last. Click the menu bar icon and pick one:
 
-- **Left-click** the icon: start/stop keeping the Mac awake (empty cup = off, filled cup = awake). **Right-click** (or Ctrl-click): menu.
-- **Also Keep Awake with Lid Closed**: only selectable while awake. Runs `pmset disablesleep 1`; the icon becomes a laptop. Turning the session off (or when it expires) restores `disablesleep 0`.
-- **Duration**: 15 min ... 12 h, or Infinite. Applies to the whole session including lid mode; a countdown shows in the tooltip and menu.
-- **Keep Display On**, **Launch at Login**, **On Launch** (Start Awake / Start Off / Remember Last State).
-- Auto-stops below 20% battery when unplugged (can be disabled).
+| State | Icon | What it does |
+| --- | --- | --- |
+| Sleep Allowed (Off) | moon | Normal macOS behaviour |
+| Disable Sleep | sun | Prevents idle system and display sleep (like `caffeinate`) |
+| Disable Sleep, Even Lid Closed | laptop | Same, plus `pmset disablesleep 1` so closing the lid doesn't sleep |
+
+The last two each have a duration submenu: 30 Minutes, 1, 3, 5, 12 Hours, or Infinite. When the time runs out everything is restored
+(`disablesleep 0`, assertions released). Every state change shows a small popup under the icon, and the tooltip shows the time left.
+
+Also: Launch at Login, On Launch (Off / Awake / Awake Even Lid Closed / Remember Last), and auto-stop below 20% battery when unplugged.
 
 ## Passwordless toggle
 
-The first time you enable lid mode, the app asks for your admin password once and writes `/etc/sudoers.d/nolidsleep`,
+The first time you pick the lid-closed option, the app asks for your admin password once and writes `/etc/sudoers.d/nolidsleep`,
 which allows only `pmset disablesleep 0` and `pmset disablesleep 1` for your user. Remove it from the menu any time
 (or `sudo rm /etc/sudoers.d/nolidsleep`).
 
