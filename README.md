@@ -3,13 +3,13 @@
 Menu bar toggle for `sudo pmset disablesleep 1|0`, so your Mac keeps running with the lid closed.
 Unlike Caffeine-style apps, this stops clamshell sleep itself.
 
-Three states, each stronger than the last. **Left-click** the icon to cycle Off → Awake → Awake with lid closed → Off. **Right-click** (or Ctrl-click) for the menu, where you can jump to a state and pick a duration (clicks use the last chosen duration):
+Three states, each stronger than the last. **Left-click** the icon to cycle Sleep Allowed → Awake, Lid Open → Awake, Lid Closed → Sleep Allowed. **Right-click** (or Ctrl-click) for the menu, where you can jump to a state and pick a duration (clicks use the last chosen duration):
 
 | State | Icon | What it does |
 | --- | --- | --- |
-| Sleep Allowed (Off) | moon and stars | Normal macOS behaviour |
-| Disable Sleep | open laptop with a sun behind it | Prevents idle system and display sleep (like `caffeinate`) |
-| Disable Sleep, Even Lid Closed | closed laptop (top view with logo) with a sun above | Same, plus `pmset disablesleep 1` so closing the lid doesn't sleep |
+| Sleep Allowed | moon and stars | Normal macOS behaviour |
+| Awake, Lid Open | open laptop with a sun behind it | Prevents idle system and display sleep (like `caffeinate`) |
+| Awake, Lid Closed | closed laptop (top view with logo) with a sun above | Same, plus `pmset disablesleep 1` so closing the lid doesn't sleep |
 
 The last two each have a duration submenu: 30 Minutes, 1, 3, 5, 12 Hours, or Infinite. When the time runs out everything is restored
 (`disablesleep 0`, assertions released). Every state change shows a small popup under the icon, and the tooltip shows the time left.

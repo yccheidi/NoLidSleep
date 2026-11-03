@@ -9,8 +9,8 @@ enum Mode: String {
     var toast: String {
         switch self {
         case .off: return "Sleep allowed"
-        case .awake: return "Awake"
-        case .lid: return "Awake, even with lid closed"
+        case .awake: return "Awake, lid open"
+        case .lid: return "Awake, lid closed"
         }
     }
 }
@@ -21,8 +21,8 @@ enum LaunchBehavior: String, CaseIterable {
     var title: String {
         switch self {
         case .off: return "Start Off"
-        case .awake: return "Start Awake"
-        case .lid: return "Start Awake, Even Lid Closed"
+        case .awake: return "Start Awake, Lid Open"
+        case .lid: return "Start Awake, Lid Closed"
         case .last: return "Remember Last State"
         }
     }

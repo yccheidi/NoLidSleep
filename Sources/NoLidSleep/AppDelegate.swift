@@ -165,7 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard mode != .off else {
             return lidSleepDisabled ? "Off · lid sleep still disabled by something else" : "Off · sleep allowed"
         }
-        let base = mode == .lid ? "Awake, even lid closed" : "Awake"
+        let base = mode == .lid ? "Awake, lid closed" : "Awake, lid open"
         if let end = endDate { return "\(base) · \(Self.format(end.timeIntervalSinceNow)) left" }
         return "\(base) · until turned off"
     }
@@ -205,10 +205,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(status)
         menu.addItem(.separator())
 
-        let off = add(menu, "Sleep Allowed (Off)", #selector(pickOff))
+        let off = add(menu, "Sleep Allowed", #selector(pickOff))
         off.state = mode == .off ? .on : .off
-        menu.addItem(durationMenuItem("Disable Sleep", .awake))
-        menu.addItem(durationMenuItem("Disable Sleep, Even Lid Closed", .lid))
+        menu.addItem(durationMenuItem("Awake, Lid Open", .awake))
+        menu.addItem(durationMenuItem("Awake, Lid Closed", .lid))
         menu.addItem(.separator())
 
         let login = add(menu, "Launch at Login", #selector(menuToggleLogin))
