@@ -20,9 +20,9 @@ enum LaunchBehavior: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .off: return "Start Off"
-        case .awake: return "Start Awake, Lid Open"
-        case .lid: return "Start Awake, Lid Closed"
+        case .off: return "Sleep Allowed"
+        case .awake: return "Awake, Lid Open"
+        case .lid: return "Awake, Lid Closed"
         case .last: return "Remember Last State"
         }
     }
