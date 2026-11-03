@@ -7,8 +7,8 @@ Three states, each stronger than the last. **Left-click** the icon to cycle Off 
 
 | State | Icon | What it does |
 | --- | --- | --- |
-| Sleep Allowed (Off) | open laptop, hollow screen | Normal macOS behaviour |
-| Disable Sleep | open laptop, lit screen | Prevents idle system and display sleep (like `caffeinate`) |
+| Sleep Allowed (Off) | moon and stars | Normal macOS behaviour |
+| Disable Sleep | open laptop with a sun behind it | Prevents idle system and display sleep (like `caffeinate`) |
 | Disable Sleep, Even Lid Closed | closed laptop with a sun above | Same, plus `pmset disablesleep 1` so closing the lid doesn't sleep |
 
 The last two each have a duration submenu: 30 Minutes, 1, 3, 5, 12 Hours, or Infinite. When the time runs out everything is restored
