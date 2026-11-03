@@ -23,7 +23,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
-        statusItem.menu = menu
+        if let button = statusItem.button {
+            button.target = self
+            button.action = #selector(statusClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
         pollSystem()
         applyLaunchBehavior()
         updateIcon()
@@ -151,14 +155,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        // Reflect reality: SleepDisabled=1 always shows the lid icon.
-        let name: String
-        if mode == .lid || (mode == .off && lidSleepDisabled) { name = "laptopcomputer" }
-        else if mode == .awake { name = "sun.max.fill" }
-        else { name = "moon.zzz" }
-        let img = NSImage(systemSymbolName: name, accessibilityDescription: "NoLidSleep")
-        img?.isTemplate = true
-        button.image = img
+        // Reflect reality: SleepDisabled=1 always shows the lid-closed icon.
+        let shown: Mode = (mode == .off && lidSleepDisabled) ? .lid : mode
+        button.image = Icons.image(for: shown)
         button.toolTip = statusText()
     }
 
@@ -175,6 +174,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let mins = Int((max(interval, 0) / 60).rounded(.up))
         if mins >= 60 { return "\(mins / 60)h \(mins % 60)m" }
         return "\(max(mins, 1))m"
+    }
+
+    // MARK: - Click
+
+    /// Left click cycles Off -> Awake -> Awake with lid closed -> Off. Right click (or Ctrl-click) opens the menu.
+    @objc private func statusClicked(_ sender: NSStatusBarButton) {
+        let e = NSApp.currentEvent
+        if e?.type == .rightMouseUp || e?.modifierFlags.contains(.control) == true {
+            statusItem.menu = menu
+            sender.performClick(nil)
+            statusItem.menu = nil
+            return
+        }
+        switch mode {
+        case .off: start(.awake, seconds: Settings.lastDuration)
+        case .awake: start(.lid, seconds: Settings.lastDuration)
+        case .lid: stop()
+        }
     }
 
     // MARK: - Menu
