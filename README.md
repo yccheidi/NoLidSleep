@@ -14,7 +14,7 @@ Three states, each stronger than the last. **Left-click** the icon to cycle Off 
 The last two each have a duration submenu: 30 Minutes, 1, 3, 5, 12 Hours, or Infinite. When the time runs out everything is restored
 (`disablesleep 0`, assertions released). Every state change shows a small popup under the icon, and the tooltip shows the time left.
 
-Also: Launch at Login, On Launch (Off / Awake / Awake Even Lid Closed / Remember Last), and auto-stop below 20% battery when unplugged.
+Also: Launch at Login, On Launch (Off / Awake / Awake Even Lid Closed / Remember Last), and auto-stop below 10% battery when unplugged.
 
 ## Passwordless toggle
 

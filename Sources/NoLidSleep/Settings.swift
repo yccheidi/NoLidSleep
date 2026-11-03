@@ -68,7 +68,7 @@ enum Settings {
         set { d.set(newValue, forKey: "lowBattery") }
     }
 
-    static let lowBatteryThreshold = 20
+    static let lowBatteryThreshold = 10
 
     static var launchAtLogin: Bool {
         get { SMAppService.mainApp.status == .enabled }
