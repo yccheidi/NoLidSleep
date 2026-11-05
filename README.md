@@ -45,7 +45,7 @@ Upload `build/NoLidSleep.zip` to a GitHub Release, then in a `homebrew-tap` repo
 
 ```ruby
 cask "nolidsleep" do
-  version "1.0.0"
+  version "0.1.0"
   sha256 "<shasum -a 256 build/NoLidSleep.zip>"
 
   url "https://github.com/<you>/NoLidSleep/releases/download/v#{version}/NoLidSleep.zip"
