@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP=build/NoLidSleep.app
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-0.1.1}"
 
 [ -f Resources/AppIcon.icns ] || swift Scripts/make_icon.swift Resources
 
@@ -23,7 +23,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <dict>
     <key>CFBundleName</key><string>NoLidSleep</string>
     <key>CFBundleDisplayName</key><string>NoLidSleep</string>
-    <key>CFBundleIdentifier</key><string>com.yanchuanchang.NoLidSleep</string>
+    <key>CFBundleIdentifier</key><string>io.github.yccheidi.NoLidSleep</string>
     <key>CFBundleExecutable</key><string>NoLidSleep</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
