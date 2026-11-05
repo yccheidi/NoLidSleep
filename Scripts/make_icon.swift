@@ -26,14 +26,14 @@ let bodyPath = NSBezierPath(roundedRect: body, xRadius: 188, yRadius: 188)
 // Drop shadow
 ctx.saveGState()
 ctx.setShadow(offset: CGSize(width: 0, height: -8), blur: 20, color: color(0x000000, 0.22).cgColor)
-color(0x1D4ED8).setFill()
+color(0x4A9DFA).setFill()
 bodyPath.fill()
 ctx.restoreGState()
 
 // Background gradient
 ctx.saveGState()
 bodyPath.addClip()
-NSGradient(colors: [color(0x4DB8FF), color(0x2B7BF0), color(0x1D4ED8)],
+NSGradient(colors: [color(0x6CC4FF), color(0x57AEFF), color(0x4A9DFA)],
            atLocations: [0, 0.55, 1], colorSpace: .sRGB)!.draw(in: body, angle: -90)
 
 // very subtle top light
@@ -42,18 +42,18 @@ ctx.restoreGState()
 
 // --- Line-art sun emerging from a frosted-glass laptop ---
 ctx.saveGState()
-ctx.translateBy(x: 0, y: -45)
+ctx.translateBy(x: 0, y: -55)
 
 let lid = NSRect(x: 292, y: 318, width: 440, height: 270)
 let base = NSRect(x: 232, y: 270, width: 560, height: 42)
-let sunCenter = NSPoint(x: 512, y: 588)
+let sunCenter = NSPoint(x: 512, y: 648)
 let sunColor = color(0xFFD84D)
 
 func strokeSun() {
     ctx.saveGState()
     ctx.setShadow(offset: .zero, blur: 16, color: color(0xF59E0B, 0.35).cgColor)
     sunColor.setStroke()
-    let ring = NSBezierPath(ovalIn: NSRect(x: sunCenter.x - 128, y: sunCenter.y - 128, width: 256, height: 256))
+    let ring = NSBezierPath(ovalIn: NSRect(x: sunCenter.x - 120, y: sunCenter.y - 120, width: 240, height: 240))
     ring.lineWidth = 36
     ring.stroke()
     let rays = NSBezierPath()
@@ -61,15 +61,15 @@ func strokeSun() {
     rays.lineCapStyle = .round
     for deg in stride(from: 0.0, through: 180.0, by: 30.0) {
         let a = CGFloat(deg) * .pi / 180
-        let outer: CGFloat = sin(a) < -0.9 ? 238 : 262   // keep the bottom ray inside the lid
-        rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 198, y: sunCenter.y + sin(a) * 198))
+        let outer: CGFloat = sin(a) < -0.9 ? 238 : 246   // keep the bottom ray inside the lid
+        rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 186, y: sunCenter.y + sin(a) * 186))
         rays.line(to: NSPoint(x: sunCenter.x + cos(a) * outer, y: sunCenter.y + sin(a) * outer))
     }
     rays.stroke()
     ctx.restoreGState()
 }
 
-let bgGradient = NSGradient(colors: [color(0x4DB8FF), color(0x2B7BF0), color(0x1D4ED8)],
+let bgGradient = NSGradient(colors: [color(0x6CC4FF), color(0x57AEFF), color(0x4A9DFA)],
                             atLocations: [0, 0.55, 1], colorSpace: .sRGB)!
 
 /// Opaque laptop part that really hides the sun behind it. A thin ring of background colour around it
