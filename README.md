@@ -25,11 +25,12 @@ which allows only `pmset disablesleep 0` and `pmset disablesleep 1` for your use
 ## Build
 
 ```sh
-./Scripts/build.sh        # -> build/NoLidSleep.app and build/NoLidSleep.zip (universal, ad-hoc signed)
+./Scripts/build.sh        # -> build/NoLidSleep.app, .zip and .dmg (universal, ad-hoc signed)
+VERSION=0.2.0 ./Scripts/build.sh   # override the version (default 0.1.0)
 swift Scripts/make_icon.swift Resources   # regenerate the icon
 ```
 
-Drag `NoLidSleep.app` to `/Applications`.
+Open the `.dmg` and drag `NoLidSleep.app` to `/Applications`.
 
 ## Sharing without notarization
 
@@ -48,10 +49,10 @@ cask "nolidsleep" do
   version "0.1.0"
   sha256 "<shasum -a 256 build/NoLidSleep.zip>"
 
-  url "https://github.com/<you>/NoLidSleep/releases/download/v#{version}/NoLidSleep.zip"
+  url "https://github.com/yccheidi/NoLidSleep/releases/download/v#{version}/NoLidSleep.zip"
   name "NoLidSleep"
   desc "Menu bar toggle to keep the Mac awake with the lid closed"
-  homepage "https://github.com/<you>/NoLidSleep"
+  homepage "https://github.com/yccheidi/NoLidSleep"
 
   depends_on macos: ">= :ventura"
   app "NoLidSleep.app"
@@ -60,11 +61,13 @@ cask "nolidsleep" do
     system_command "/usr/bin/xattr", args: ["-cr", "#{appdir}/NoLidSleep.app"]
   end
 
-  zap trash: "/etc/sudoers.d/nolidsleep"
 end
 ```
 
-Install: `brew install --cask <you>/tap/nolidsleep`.
+The cask can't remove `/etc/sudoers.d/nolidsleep` (root-owned). Before uninstalling, use "Remove Lid Permission…" in the app menu, or run `sudo rm /etc/sudoers.d/nolidsleep`.
+Brew can only download from a public repo; while the repo is private, share the `.dmg` directly.
+
+Install: `brew install --cask yccheidi/tap/nolidsleep`.
 
 ## Heads-up
 

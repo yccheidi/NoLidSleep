@@ -163,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func statusText() -> String {
         guard mode != .off else {
-            return lidSleepDisabled ? "Off · lid sleep still disabled by something else" : "Off · sleep allowed"
+            return lidSleepDisabled ? "Sleep Allowed · but lid sleep is still disabled by something else" : "Sleep Allowed"
         }
         let base = mode == .lid ? "Awake, lid closed" : "Awake, lid open"
         if let end = endDate { return "\(base) · \(Self.format(end.timeIntervalSinceNow)) left" }
@@ -178,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Click
 
-    /// Left click cycles Off -> Awake -> Awake with lid closed -> Off. Right click (or Ctrl-click) opens the menu.
+    /// Left click cycles Sleep Allowed -> Awake, Lid Open -> Awake, Lid Closed -> Sleep Allowed. Right click (or Ctrl-click) opens the menu.
     @objc private func statusClicked(_ sender: NSStatusBarButton) {
         let e = NSApp.currentEvent
         if e?.type == .rightMouseUp || e?.modifierFlags.contains(.control) == true {
