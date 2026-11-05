@@ -66,7 +66,7 @@ ctx.saveGState()
 ctx.translateBy(x: 0, y: -55)
 
 let lid = NSRect(x: 292, y: 318, width: 440, height: 270)
-let base = NSRect(x: 232, y: 270, width: 560, height: 42)
+let base = NSRect(x: 222, y: 244, width: 580, height: 68)
 let sunCenter = NSPoint(x: 512, y: 648)
 let sunColor = color(theme.sun)
 
@@ -108,6 +108,11 @@ func solidPart(_ rect: NSRect, radius: CGFloat, top: UInt32, bottom: UInt32) {
     ctx.saveGState()
     path.addClip()
     NSGradient(starting: color(top), ending: color(bottom))!.draw(in: rect, angle: -90)
+    // brushed-metal feel: specular band on top, darker lip at the bottom
+    NSGradient(colors: [color(0xFFFFFF, 0.65), color(0xFFFFFF, 0)])!
+        .draw(in: NSRect(x: rect.minX, y: rect.maxY - rect.height * 0.35, width: rect.width, height: rect.height * 0.35), angle: -90)
+    NSGradient(colors: [color(0x000000, 0), color(0x1B1F2A, 0.28)])!
+        .draw(in: NSRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height * 0.3), angle: -90)
     ctx.restoreGState()
     color(0xFFFFFF, 0.9).setStroke()
     path.lineWidth = 2.5
@@ -126,9 +131,20 @@ NSGradient(colors: theme.screen.map { color($0) })!.draw(in: screen, angle: -90)
 NSGradient(colors: [color(0xFFFFFF, 0.22), color(0xFFFFFF, 0)])!
     .draw(in: NSRect(x: screen.minX, y: screen.midY, width: screen.width, height: screen.height / 2), angle: -90)
 ctx.restoreGState()
-solidPart(base, radius: 21, top: theme.base[0], bottom: theme.base[1])
-color(0xFFFFFF, 0.6).setFill()
-NSBezierPath(roundedRect: NSRect(x: 462, y: 285, width: 100, height: 9), xRadius: 4.5, yRadius: 4.5).fill()
+// bezel: inner edge and camera, so it clearly reads as a laptop
+color(0x000000, 0.38).setStroke()
+screenPath.lineWidth = 3
+screenPath.stroke()
+color(0x2A2D36, 0.6).setFill()
+NSBezierPath(ovalIn: NSRect(x: lid.midX - 6, y: lid.maxY - 20, width: 12, height: 12)).fill()
+
+solidPart(base, radius: 30, top: theme.base[0], bottom: theme.base[1])
+// thumb notch on the front edge of the base
+ctx.saveGState()
+NSBezierPath(roundedRect: base, xRadius: 30, yRadius: 30).addClip()
+let notch = NSBezierPath(roundedRect: NSRect(x: base.midX - 70, y: base.maxY - 30, width: 140, height: 52), xRadius: 22, yRadius: 22)
+NSGradient(colors: [color(0x6C707A, 0.9), color(0xB4B8C1, 0.9)])!.draw(in: notch, angle: -90)
+ctx.restoreGState()
 
 ctx.restoreGState()
 
