@@ -24,7 +24,6 @@ enum About {
             .applicationVersion: AppInfo.version,
             .version: "",
             .credits: credits,
-            .init(rawValue: "Copyright"): "© 2026 yanchuan",
         ])
     }
 }
