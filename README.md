@@ -6,7 +6,7 @@ Unlike Caffeine-style apps, this stops clamshell sleep itself.
 ## Download
 
 Get the latest `NoLidSleep.dmg` from the [Releases page](https://github.com/yccheidi/NoLidSleep/releases/latest), open it and drag NoLidSleep to Applications.
-Requires macOS 13 or later. The app is not notarized, see [Sharing without notarization](#sharing-without-notarization) for the first launch.
+Requires macOS 13 or later. The app is not notarized, see [First launch](#first-launch-not-notarized) for the first launch.
 
 ## Usage
 
@@ -39,9 +39,12 @@ swift Scripts/make_icon.swift Resources   # regenerate the icon
 
 Open the `.dmg` and drag `NoLidSleep.app` to `/Applications`.
 
-## Sharing without notarization
+## First launch (not notarized)
 
-The app is not notarized. On another Mac, first open via right-click > Open, or:
+NoLidSleep is signed ad-hoc and not notarized (that needs a paid Apple Developer account), so macOS blocks it the first time. Either:
+
+1. Open the app once, then go to **System Settings > Privacy & Security**, scroll down and click **Open Anyway** next to "NoLidSleep was blocked". (On macOS 15 and later, right-click > Open no longer works.)
+2. Or run this once in Terminal, then open the app normally:
 
 ```sh
 xattr -cr /Applications/NoLidSleep.app
