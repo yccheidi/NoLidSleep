@@ -230,6 +230,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         if ruleInstalled { add(menu, "Remove Lid Permission…", #selector(menuRemoveRule)) }
         menu.addItem(.separator())
+        add(menu, "About NoLidSleep", #selector(menuAbout))
+        add(menu, "Check for Updates…", #selector(menuCheckUpdates))
+        menu.addItem(.separator())
         let quit = add(menu, "Quit NoLidSleep", #selector(menuQuit))
         quit.keyEquivalent = "q"
     }
@@ -265,6 +268,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func menuToggleLogin() { Settings.launchAtLogin.toggle() }
     @objc private func menuToggleBattery() { Settings.lowBatteryProtection.toggle() }
+    @objc private func menuAbout() { About.show() }
+    @objc private func menuCheckUpdates() { UpdateChecker.check() }
     @objc private func menuQuit() { NSApp.terminate(nil) }
 
     @objc private func pickBehavior(_ sender: NSMenuItem) {
