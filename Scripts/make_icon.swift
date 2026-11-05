@@ -59,10 +59,11 @@ func strokeSun() {
     let rays = NSBezierPath()
     rays.lineWidth = 36
     rays.lineCapStyle = .round
-    for deg in stride(from: 30.0, through: 150.0, by: 30.0) {
+    for deg in stride(from: 0.0, through: 330.0, by: 30.0) {
         let a = CGFloat(deg) * .pi / 180
+        let outer: CGFloat = sin(a) < -0.9 ? 238 : 262   // keep the bottom ray inside the lid
         rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 198, y: sunCenter.y + sin(a) * 198))
-        rays.line(to: NSPoint(x: sunCenter.x + cos(a) * 262, y: sunCenter.y + sin(a) * 262))
+        rays.line(to: NSPoint(x: sunCenter.x + cos(a) * outer, y: sunCenter.y + sin(a) * outer))
     }
     rays.stroke()
     ctx.restoreGState()
@@ -96,7 +97,7 @@ ctx.restoreGState()
 // let the sun glow through the glass so it doesn't look muddy
 ctx.saveGState()
 NSBezierPath(roundedRect: lid, xRadius: 44, yRadius: 44).addClip()
-ctx.setAlpha(0.55)
+ctx.setAlpha(0.5)
 strokeSun()
 ctx.restoreGState()
 // base
