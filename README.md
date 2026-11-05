@@ -3,6 +3,13 @@
 Menu bar toggle for `sudo pmset disablesleep 1|0`, so your Mac keeps running with the lid closed.
 Unlike Caffeine-style apps, this stops clamshell sleep itself.
 
+## Download
+
+Get the latest `NoLidSleep.dmg` from the [Releases page](https://github.com/yccheidi/NoLidSleep/releases/latest), open it and drag NoLidSleep to Applications.
+Requires macOS 13 or later. The app is not notarized, see [Sharing without notarization](#sharing-without-notarization) for the first launch.
+
+## Usage
+
 Three states, each stronger than the last. **Left-click** the icon to cycle Sleep Allowed → Awake, Lid Open → Awake, Lid Closed → Sleep Allowed. **Right-click** (or Ctrl-click) for the menu, where you can jump to a state and pick a duration (clicks use the last chosen duration):
 
 | State | Icon | What it does |
@@ -39,35 +46,6 @@ The app is not notarized. On another Mac, first open via right-click > Open, or:
 ```sh
 xattr -cr /Applications/NoLidSleep.app
 ```
-
-### Homebrew cask (own tap)
-
-Upload `build/NoLidSleep.zip` to a GitHub Release, then in a `homebrew-tap` repo add `Casks/nolidsleep.rb`:
-
-```ruby
-cask "nolidsleep" do
-  version "0.1.3"
-  sha256 "<shasum -a 256 build/NoLidSleep.zip>"
-
-  url "https://github.com/yccheidi/NoLidSleep/releases/download/v#{version}/NoLidSleep.zip"
-  name "NoLidSleep"
-  desc "Menu bar toggle to keep the Mac awake with the lid closed"
-  homepage "https://github.com/yccheidi/NoLidSleep"
-
-  depends_on macos: ">= :ventura"
-  app "NoLidSleep.app"
-
-  postflight do
-    system_command "/usr/bin/xattr", args: ["-cr", "#{appdir}/NoLidSleep.app"]
-  end
-
-end
-```
-
-The cask can't remove `/etc/sudoers.d/nolidsleep` (root-owned). Before uninstalling, use "Remove Lid Permission…" in the app menu, or run `sudo rm /etc/sudoers.d/nolidsleep`.
-Brew can only download from a public repo; while the repo is private, share the `.dmg` directly.
-
-Install: `brew install --cask yccheidi/tap/nolidsleep`.
 
 ## Heads-up
 
