@@ -66,7 +66,7 @@ ctx.saveGState()
 ctx.translateBy(x: 0, y: -55)
 
 let lid = NSRect(x: 292, y: 318, width: 440, height: 270)
-let base = NSRect(x: 222, y: 244, width: 580, height: 68)
+let base = NSRect(x: 232, y: 268, width: 560, height: 44)
 let sunCenter = NSPoint(x: 512, y: 648)
 let sunColor = color(theme.sun)
 
@@ -138,11 +138,11 @@ screenPath.stroke()
 color(0x2A2D36, 0.6).setFill()
 NSBezierPath(ovalIn: NSRect(x: lid.midX - 6, y: lid.maxY - 20, width: 12, height: 12)).fill()
 
-solidPart(base, radius: 30, top: theme.base[0], bottom: theme.base[1])
+solidPart(base, radius: 22, top: theme.base[0], bottom: theme.base[1])
 // thumb notch on the front edge of the base
 ctx.saveGState()
-NSBezierPath(roundedRect: base, xRadius: 30, yRadius: 30).addClip()
-let notch = NSBezierPath(roundedRect: NSRect(x: base.midX - 70, y: base.maxY - 30, width: 140, height: 52), xRadius: 22, yRadius: 22)
+NSBezierPath(roundedRect: base, xRadius: 22, yRadius: 22).addClip()
+let notch = NSBezierPath(roundedRect: NSRect(x: base.midX - 56, y: base.maxY - 17, width: 112, height: 40), xRadius: 16, yRadius: 16)
 NSGradient(colors: [color(0x6C707A, 0.9), color(0xB4B8C1, 0.9)])!.draw(in: notch, angle: -90)
 ctx.restoreGState()
 
