@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP=build/NoLidSleep.app
-VERSION="${VERSION:-0.1.1}"
+VERSION="${VERSION:-0.1.2}"
 
 [ -f Resources/AppIcon.icns ] || swift Scripts/make_icon.swift Resources
 

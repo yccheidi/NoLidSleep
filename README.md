@@ -26,7 +26,7 @@ which allows only `pmset disablesleep 0` and `pmset disablesleep 1` for your use
 
 ```sh
 ./Scripts/build.sh        # -> build/NoLidSleep.app, .zip and .dmg (universal, ad-hoc signed)
-VERSION=0.2.0 ./Scripts/build.sh   # override the version (default 0.1.1)
+VERSION=0.2.0 ./Scripts/build.sh   # override the version (default 0.1.2)
 swift Scripts/make_icon.swift Resources   # regenerate the icon
 ```
 
@@ -46,7 +46,7 @@ Upload `build/NoLidSleep.zip` to a GitHub Release, then in a `homebrew-tap` repo
 
 ```ruby
 cask "nolidsleep" do
-  version "0.1.1"
+  version "0.1.2"
   sha256 "<shasum -a 256 build/NoLidSleep.zip>"
 
   url "https://github.com/yccheidi/NoLidSleep/releases/download/v#{version}/NoLidSleep.zip"
