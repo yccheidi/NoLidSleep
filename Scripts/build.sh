@@ -40,3 +40,13 @@ codesign --force --deep --sign - "$APP"
 
 (cd build && rm -f NoLidSleep.zip && ditto -c -k --keepParent NoLidSleep.app NoLidSleep.zip)
 echo "Built $APP and build/NoLidSleep.zip"
+
+# Drag-to-install DMG
+DMG=build/NoLidSleep.dmg
+STAGE=$(mktemp -d)
+cp -R "$APP" "$STAGE/"
+ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "NoLidSleep" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+rm -rf "$STAGE"
+echo "Built $DMG"
