@@ -48,47 +48,68 @@ NSGradient(colors: [color(0xFFFFFF, 0.30), color(0xFFFFFF, 0.04)])!.draw(in: bod
 ctx.restoreGState()
 ctx.restoreGState()
 
-// Laptop (front view, lid open)
-ctx.translateBy(x: 0, y: -75)
-func glass(_ rect: NSRect, radius: CGFloat, top: CGFloat, bottom: CGFloat) {
-    let p = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+// --- Line-art sun emerging from a frosted-glass laptop ---
+ctx.saveGState()
+ctx.translateBy(x: 0, y: -45)
+
+let lid = NSRect(x: 282, y: 330, width: 460, height: 290)
+let base = NSRect(x: 222, y: 280, width: 580, height: 44)
+let sunCenter = NSPoint(x: 512, y: 620)
+let sunColor = color(0xFFE9A8)
+
+func strokeSun() {
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -10), blur: 24, color: color(0x0B0E3A, 0.45).cgColor)
-    color(0xFFFFFF, 0.5).setFill(); p.fill()
+    ctx.setShadow(offset: .zero, blur: 40, color: color(0xFFC857, 0.75).cgColor)
+    sunColor.setStroke()
+    let ring = NSBezierPath(ovalIn: NSRect(x: sunCenter.x - 105, y: sunCenter.y - 105, width: 210, height: 210))
+    ring.lineWidth = 24
+    ring.stroke()
+    let rays = NSBezierPath()
+    rays.lineWidth = 24
+    rays.lineCapStyle = .round
+    for deg in stride(from: 30.0, through: 150.0, by: 30.0) {
+        let a = CGFloat(deg) * .pi / 180
+        rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 158, y: sunCenter.y + sin(a) * 158))
+        rays.line(to: NSPoint(x: sunCenter.x + cos(a) * 218, y: sunCenter.y + sin(a) * 218))
+    }
+    rays.stroke()
     ctx.restoreGState()
-    ctx.saveGState()
-    p.addClip()
-    NSGradient(starting: color(0xFFFFFF, top), ending: color(0xFFFFFF, bottom))!.draw(in: rect, angle: -90)
-    ctx.restoreGState()
-    color(0xFFFFFF, 0.65).setStroke()
-    p.lineWidth = 3
-    p.stroke()
 }
 
-let lid = NSRect(x: 292, y: 468, width: 440, height: 290)
-glass(lid, radius: 40, top: 0.95, bottom: 0.70)
+func frostedGlass(_ rect: NSRect, radius: CGFloat, topAlpha: CGFloat, bottomAlpha: CGFloat) {
+    let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 30, color: color(0x0B0E3A, 0.35).cgColor)
+    color(0xFFFFFF, 0.2).setFill(); path.fill()
+    ctx.restoreGState()
+    ctx.saveGState()
+    path.addClip()
+    NSGradient(starting: color(0xFFFFFF, topAlpha), ending: color(0xFFFFFF, bottomAlpha))!.draw(in: rect, angle: -90)
+    // soft top sheen
+    NSGradient(colors: [color(0xFFFFFF, 0.35), color(0xFFFFFF, 0)])!
+        .draw(in: NSRect(x: rect.minX, y: rect.midY, width: rect.width, height: rect.height / 2), angle: -90)
+    ctx.restoreGState()
+    color(0xFFFFFF, 0.7).setStroke()
+    path.lineWidth = 3
+    path.stroke()
+}
 
-// Screen
+// sun behind the glass
+strokeSun()
+// lid + screen
+frostedGlass(lid, radius: 44, topAlpha: 0.78, bottomAlpha: 0.34)
 let screen = lid.insetBy(dx: 26, dy: 26)
-let screenPath = NSBezierPath(roundedRect: screen, xRadius: 20, yRadius: 20)
+let screenPath = NSBezierPath(roundedRect: screen, xRadius: 22, yRadius: 22)
 ctx.saveGState()
 screenPath.addClip()
-NSGradient(colors: [color(0x1B2060), color(0x0E1037)])!.draw(in: screen, angle: -90)
-// glowing "awake" orb
-let c = NSPoint(x: screen.midX, y: screen.midY)
-NSGradient(colors: [color(0xFFE29A, 0.95), color(0xFFB347, 0.55), color(0xFF8A3D, 0)],
-           atLocations: [0, 0.35, 1], colorSpace: .sRGB)!
-    .draw(fromCenter: c, radius: 0, toCenter: c, radius: 120, options: [])
-color(0xFFF3D1).setFill()
-NSBezierPath(ovalIn: NSRect(x: c.x - 34, y: c.y - 34, width: 68, height: 68)).fill()
+NSGradient(colors: [color(0x2B3AA8, 0.30), color(0x1A1470, 0.50)])!.draw(in: screen, angle: -90)
 ctx.restoreGState()
+// base
+frostedGlass(base, radius: 22, topAlpha: 0.80, bottomAlpha: 0.45)
+color(0xFFFFFF, 0.45).setFill()
+NSBezierPath(roundedRect: NSRect(x: 462, y: 296, width: 100, height: 9), xRadius: 4.5, yRadius: 4.5).fill()
 
-// Base
-let base = NSRect(x: 232, y: 424, width: 560, height: 46)
-glass(base, radius: 23, top: 0.92, bottom: 0.62)
-// Notch on the base
-color(0x1B2060, 0.35).setFill()
-NSBezierPath(roundedRect: NSRect(x: 452, y: 444, width: 120, height: 10), xRadius: 5, yRadius: 5).fill()
+ctx.restoreGState()
 
 // Edge highlight on the body
 color(0xFFFFFF, 0.35).setStroke()
