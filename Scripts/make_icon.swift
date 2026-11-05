@@ -103,7 +103,7 @@ let screen = lid.insetBy(dx: 26, dy: 26)
 let screenPath = NSBezierPath(roundedRect: screen, xRadius: 22, yRadius: 22)
 ctx.saveGState()
 screenPath.addClip()
-NSGradient(colors: [color(0x3F78E8), color(0x1F45B5)])!.draw(in: screen, angle: -90)
+NSGradient(colors: [color(0x9AD3FF), color(0x6AB1FA)])!.draw(in: screen, angle: -90)
 // faint reflection so the screen still feels like glass
 NSGradient(colors: [color(0xFFFFFF, 0.22), color(0xFFFFFF, 0)])!
     .draw(in: NSRect(x: screen.minX, y: screen.midY, width: screen.width, height: screen.height / 2), angle: -90)
