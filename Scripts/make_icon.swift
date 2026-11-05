@@ -23,7 +23,7 @@ let themes: [String: Theme] = [
     "charcoal": Theme(bg: [0x4A4E57, 0x3A3D45, 0x2B2E35], screen: [0x5A606C, 0x383C46],
                       frame: [0xF3F4F6, 0xB9BDC6], base: [0xDEE0E5, 0x8E939E], sun: 0xFFC83D, glow: 0xF59E0B),
     "graphite": Theme(bg: [0x37393F, 0x25272B, 0x15161A], screen: [0x474B53, 0x25272D],
-                      frame: [0x8A8E98, 0x60636C], base: [0x777B85, 0x50535B], sun: 0xFFC83D, glow: 0xF59E0B),
+                      frame: [0xFFFFFF, 0xE3E5EA], base: [0xF3F4F7, 0xC3C6CD], sun: 0xFFC83D, glow: 0xF59E0B),
     "black": Theme(bg: [0x26262A, 0x151518, 0x08080A], screen: [0x34343A, 0x17171B],
                    frame: [0xE9EAEC, 0x9A9DA5], base: [0xC9CBD0, 0x6E7178], sun: 0xFFC83D, glow: 0xF59E0B),
     "peach": Theme(bg: [0xFFEBDA, 0xFFD7B9, 0xFFC29C], screen: [0xFFC39A, 0xF79F6C],
@@ -109,7 +109,7 @@ func solidPart(_ rect: NSRect, radius: CGFloat, top: UInt32, bottom: UInt32) {
     path.addClip()
     NSGradient(starting: color(top), ending: color(bottom))!.draw(in: rect, angle: -90)
     ctx.restoreGState()
-    color(0xFFFFFF, 0.28).setStroke()
+    color(0xFFFFFF, 0.9).setStroke()
     path.lineWidth = 2.5
     path.stroke()
 }
