@@ -59,7 +59,7 @@ func strokeSun() {
     let rays = NSBezierPath()
     rays.lineWidth = 36
     rays.lineCapStyle = .round
-    for deg in stride(from: 0.0, through: 330.0, by: 30.0) {
+    for deg in stride(from: 0.0, through: 180.0, by: 30.0) {
         let a = CGFloat(deg) * .pi / 180
         let outer: CGFloat = sin(a) < -0.9 ? 238 : 262   // keep the bottom ray inside the lid
         rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 198, y: sunCenter.y + sin(a) * 198))
@@ -69,40 +69,47 @@ func strokeSun() {
     ctx.restoreGState()
 }
 
-func frostedGlass(_ rect: NSRect, radius: CGFloat, topAlpha: CGFloat, bottomAlpha: CGFloat) {
+let bgGradient = NSGradient(colors: [color(0x4DB8FF), color(0x2B7BF0), color(0x1D4ED8)],
+                            atLocations: [0, 0.55, 1], colorSpace: .sRGB)!
+
+/// Opaque laptop part that really hides the sun behind it. A thin ring of background colour around it
+/// cuts the sun cleanly where it passes behind.
+func solidPart(_ rect: NSRect, radius: CGFloat, top: UInt32, bottom: UInt32) {
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    // gap ring in background colour
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -6), blur: 14, color: color(0x0B1E5A, 0.22).cgColor)
-    color(0xFFFFFF, 0.2).setFill(); path.fill()
+    let gap = NSBezierPath(roundedRect: rect.insetBy(dx: -12, dy: -12), xRadius: radius + 12, yRadius: radius + 12)
+    gap.addClip()
+    bgGradient.draw(in: body, angle: -90)
+    ctx.restoreGState()
+    // soft shadow + body
+    ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: -6), blur: 14, color: color(0x0B1E5A, 0.25).cgColor)
+    color(top).setFill(); path.fill()
     ctx.restoreGState()
     ctx.saveGState()
     path.addClip()
-    NSGradient(starting: color(0xFFFFFF, topAlpha), ending: color(0xFFFFFF, bottomAlpha))!.draw(in: rect, angle: -90)
+    NSGradient(starting: color(top), ending: color(bottom))!.draw(in: rect, angle: -90)
     ctx.restoreGState()
-    color(0xFFFFFF, 0.55).setStroke()
+    color(0xFFFFFF, 0.8).setStroke()
     path.lineWidth = 2.5
     path.stroke()
 }
 
-// sun behind the glass
+// sun first, then the laptop in front of it
 strokeSun()
-// lid + screen
-frostedGlass(lid, radius: 44, topAlpha: 0.72, bottomAlpha: 0.42)
+solidPart(lid, radius: 44, top: 0xF4F9FF, bottom: 0xBFD7FF)
 let screen = lid.insetBy(dx: 26, dy: 26)
 let screenPath = NSBezierPath(roundedRect: screen, xRadius: 22, yRadius: 22)
 ctx.saveGState()
 screenPath.addClip()
-NSGradient(colors: [color(0x1E40AF, 0.22), color(0x1E3A8A, 0.38)])!.draw(in: screen, angle: -90)
+NSGradient(colors: [color(0x3F78E8), color(0x1F45B5)])!.draw(in: screen, angle: -90)
+// faint reflection so the screen still feels like glass
+NSGradient(colors: [color(0xFFFFFF, 0.22), color(0xFFFFFF, 0)])!
+    .draw(in: NSRect(x: screen.minX, y: screen.midY, width: screen.width, height: screen.height / 2), angle: -90)
 ctx.restoreGState()
-// let the sun glow through the glass so it doesn't look muddy
-ctx.saveGState()
-NSBezierPath(roundedRect: lid, xRadius: 44, yRadius: 44).addClip()
-ctx.setAlpha(0.5)
-strokeSun()
-ctx.restoreGState()
-// base
-frostedGlass(base, radius: 21, topAlpha: 0.78, bottomAlpha: 0.55)
-color(0xFFFFFF, 0.45).setFill()
+solidPart(base, radius: 21, top: 0xE6F0FF, bottom: 0xA9C6F5)
+color(0xFFFFFF, 0.6).setFill()
 NSBezierPath(roundedRect: NSRect(x: 462, y: 285, width: 100, height: 9), xRadius: 4.5, yRadius: 4.5).fill()
 
 ctx.restoreGState()
