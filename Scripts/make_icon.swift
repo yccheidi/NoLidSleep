@@ -25,52 +25,44 @@ let bodyPath = NSBezierPath(roundedRect: body, xRadius: 188, yRadius: 188)
 
 // Drop shadow
 ctx.saveGState()
-ctx.setShadow(offset: CGSize(width: 0, height: -14), blur: 36, color: color(0x000000, 0.35).cgColor)
-color(0x1B2250).setFill()
+ctx.setShadow(offset: CGSize(width: 0, height: -8), blur: 20, color: color(0x000000, 0.22).cgColor)
+color(0x1D4ED8).setFill()
 bodyPath.fill()
 ctx.restoreGState()
 
 // Background gradient
 ctx.saveGState()
 bodyPath.addClip()
-NSGradient(colors: [color(0x6E8CFF), color(0x4B4FE0), color(0x211B66)],
-           atLocations: [0, 0.5, 1], colorSpace: .sRGB)!.draw(in: body, angle: -90)
+NSGradient(colors: [color(0x4DB8FF), color(0x2B7BF0), color(0x1D4ED8)],
+           atLocations: [0, 0.55, 1], colorSpace: .sRGB)!.draw(in: body, angle: -90)
 
-// Soft light bloom behind the laptop
-NSGradient(colors: [color(0xFFFFFF, 0.28), color(0xFFFFFF, 0)])!
-    .draw(fromCenter: NSPoint(x: 512, y: 560), radius: 0, toCenter: NSPoint(x: 512, y: 560), radius: 380, options: [])
-
-// Glass sheen on the upper half
-let sheen = NSBezierPath(ovalIn: NSRect(x: -100, y: 520, width: 1224, height: 900))
-ctx.saveGState()
-sheen.addClip()
-NSGradient(colors: [color(0xFFFFFF, 0.30), color(0xFFFFFF, 0.04)])!.draw(in: body, angle: -90)
-ctx.restoreGState()
+// very subtle top light
+NSGradient(colors: [color(0xFFFFFF, 0.10), color(0xFFFFFF, 0)])!.draw(in: body, angle: -90)
 ctx.restoreGState()
 
 // --- Line-art sun emerging from a frosted-glass laptop ---
 ctx.saveGState()
 ctx.translateBy(x: 0, y: -45)
 
-let lid = NSRect(x: 282, y: 330, width: 460, height: 290)
-let base = NSRect(x: 222, y: 280, width: 580, height: 44)
-let sunCenter = NSPoint(x: 512, y: 620)
-let sunColor = color(0xFFE9A8)
+let lid = NSRect(x: 292, y: 318, width: 440, height: 270)
+let base = NSRect(x: 232, y: 270, width: 560, height: 42)
+let sunCenter = NSPoint(x: 512, y: 588)
+let sunColor = color(0xFFD84D)
 
 func strokeSun() {
     ctx.saveGState()
-    ctx.setShadow(offset: .zero, blur: 40, color: color(0xFFC857, 0.75).cgColor)
+    ctx.setShadow(offset: .zero, blur: 16, color: color(0xF59E0B, 0.35).cgColor)
     sunColor.setStroke()
-    let ring = NSBezierPath(ovalIn: NSRect(x: sunCenter.x - 105, y: sunCenter.y - 105, width: 210, height: 210))
-    ring.lineWidth = 24
+    let ring = NSBezierPath(ovalIn: NSRect(x: sunCenter.x - 128, y: sunCenter.y - 128, width: 256, height: 256))
+    ring.lineWidth = 36
     ring.stroke()
     let rays = NSBezierPath()
-    rays.lineWidth = 24
+    rays.lineWidth = 36
     rays.lineCapStyle = .round
     for deg in stride(from: 30.0, through: 150.0, by: 30.0) {
         let a = CGFloat(deg) * .pi / 180
-        rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 158, y: sunCenter.y + sin(a) * 158))
-        rays.line(to: NSPoint(x: sunCenter.x + cos(a) * 218, y: sunCenter.y + sin(a) * 218))
+        rays.move(to: NSPoint(x: sunCenter.x + cos(a) * 198, y: sunCenter.y + sin(a) * 198))
+        rays.line(to: NSPoint(x: sunCenter.x + cos(a) * 262, y: sunCenter.y + sin(a) * 262))
     }
     rays.stroke()
     ctx.restoreGState()
@@ -79,40 +71,43 @@ func strokeSun() {
 func frostedGlass(_ rect: NSRect, radius: CGFloat, topAlpha: CGFloat, bottomAlpha: CGFloat) {
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 30, color: color(0x0B0E3A, 0.35).cgColor)
+    ctx.setShadow(offset: CGSize(width: 0, height: -6), blur: 14, color: color(0x0B1E5A, 0.22).cgColor)
     color(0xFFFFFF, 0.2).setFill(); path.fill()
     ctx.restoreGState()
     ctx.saveGState()
     path.addClip()
     NSGradient(starting: color(0xFFFFFF, topAlpha), ending: color(0xFFFFFF, bottomAlpha))!.draw(in: rect, angle: -90)
-    // soft top sheen
-    NSGradient(colors: [color(0xFFFFFF, 0.35), color(0xFFFFFF, 0)])!
-        .draw(in: NSRect(x: rect.minX, y: rect.midY, width: rect.width, height: rect.height / 2), angle: -90)
     ctx.restoreGState()
-    color(0xFFFFFF, 0.7).setStroke()
-    path.lineWidth = 3
+    color(0xFFFFFF, 0.55).setStroke()
+    path.lineWidth = 2.5
     path.stroke()
 }
 
 // sun behind the glass
 strokeSun()
 // lid + screen
-frostedGlass(lid, radius: 44, topAlpha: 0.78, bottomAlpha: 0.34)
+frostedGlass(lid, radius: 44, topAlpha: 0.72, bottomAlpha: 0.42)
 let screen = lid.insetBy(dx: 26, dy: 26)
 let screenPath = NSBezierPath(roundedRect: screen, xRadius: 22, yRadius: 22)
 ctx.saveGState()
 screenPath.addClip()
-NSGradient(colors: [color(0x2B3AA8, 0.30), color(0x1A1470, 0.50)])!.draw(in: screen, angle: -90)
+NSGradient(colors: [color(0x1E40AF, 0.22), color(0x1E3A8A, 0.38)])!.draw(in: screen, angle: -90)
+ctx.restoreGState()
+// let the sun glow through the glass so it doesn't look muddy
+ctx.saveGState()
+NSBezierPath(roundedRect: lid, xRadius: 44, yRadius: 44).addClip()
+ctx.setAlpha(0.55)
+strokeSun()
 ctx.restoreGState()
 // base
-frostedGlass(base, radius: 22, topAlpha: 0.80, bottomAlpha: 0.45)
+frostedGlass(base, radius: 21, topAlpha: 0.78, bottomAlpha: 0.55)
 color(0xFFFFFF, 0.45).setFill()
-NSBezierPath(roundedRect: NSRect(x: 462, y: 296, width: 100, height: 9), xRadius: 4.5, yRadius: 4.5).fill()
+NSBezierPath(roundedRect: NSRect(x: 462, y: 285, width: 100, height: 9), xRadius: 4.5, yRadius: 4.5).fill()
 
 ctx.restoreGState()
 
 // Edge highlight on the body
-color(0xFFFFFF, 0.35).setStroke()
+color(0xFFFFFF, 0.18).setStroke()
 let edge = NSBezierPath(roundedRect: body.insetBy(dx: 1.5, dy: 1.5), xRadius: 186, yRadius: 186)
 edge.lineWidth = 3
 edge.stroke()
