@@ -22,12 +22,16 @@ enum Icons {
         return img
     }
 
-    /// SF Symbol moon, centred on the same 20x18 canvas as the other icons so the status item never changes width.
+    /// Filled SF Symbol moon, scaled to fill the 20x18 canvas.
     private static func drawMoonStars() {
-        let cfg = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
-        guard let sym = NSImage(systemSymbolName: "moon.stars", accessibilityDescription: nil)?.withSymbolConfiguration(cfg) else { return }
-        let size = sym.size
-        sym.draw(in: NSRect(x: (20 - size.width) / 2, y: (18 - size.height) / 2, width: size.width, height: size.height))
+        let cfg = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        guard let sym = (NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: nil)
+                         ?? NSImage(systemSymbolName: "moon.stars", accessibilityDescription: nil))?
+            .withSymbolConfiguration(cfg) else { return }
+        let sz = sym.size
+        let k = min(19.5 / sz.width, 17.5 / sz.height)
+        let w = sz.width * k, h = sz.height * k
+        sym.draw(in: NSRect(x: (20 - w) / 2, y: (18 - h) / 2, width: w, height: h))
     }
 
     private static func drawSun(center c: NSPoint, radius r: CGFloat, rayFrom: CGFloat, rayTo: CGFloat, skipping skip: Set<Int> = []) {
@@ -44,18 +48,18 @@ enum Icons {
     }
 
     private static func drawLaptopWithSunBehind() {
-        drawSun(center: NSPoint(x: 13.6, y: 12.2), radius: 2.6, rayFrom: 3.9, rayTo: 5.0)
-        let screen = NSRect(x: 1.6, y: 5.6, width: 12.2, height: 8)
-        let base = NSRect(x: 0.4, y: 2.4, width: 15.4, height: 2.4)
+        drawSun(center: NSPoint(x: 14.7, y: 12.6), radius: 2.3, rayFrom: 3.6, rayTo: 4.6, skipping: [4, 5, 6, 7])
+        let screen = NSRect(x: 0.6, y: 5.0, width: 12.8, height: 8.6)
+        let base = NSRect(x: 0.0, y: 1.6, width: 14.6, height: 2.6)
         // knock out a gap around the laptop so the sun reads as "behind" it
         if let ctx = NSGraphicsContext.current?.cgContext {
             ctx.saveGState()
             ctx.setBlendMode(.clear)
-            NSBezierPath(roundedRect: screen.insetBy(dx: -1.3, dy: -1.3), xRadius: 2.8, yRadius: 2.8).fill()
-            NSBezierPath(roundedRect: base.insetBy(dx: -1.3, dy: -1.3), xRadius: 2.4, yRadius: 2.4).fill()
+            NSBezierPath(roundedRect: screen.insetBy(dx: -1.2, dy: -1.2), xRadius: 2.8, yRadius: 2.8).fill()
+            NSBezierPath(roundedRect: base.insetBy(dx: -1.2, dy: -1.2), xRadius: 2.4, yRadius: 2.4).fill()
             ctx.restoreGState()
         }
-        NSBezierPath(roundedRect: screen, xRadius: 1.6, yRadius: 1.6).fill()
+        NSBezierPath(roundedRect: screen, xRadius: 1.8, yRadius: 1.8).fill()
         NSBezierPath(roundedRect: base, xRadius: 1.2, yRadius: 1.2).fill()
     }
 
