@@ -6,19 +6,25 @@ import AppKit
 ///  lid   - closed laptop with a sun above it
 enum Icons {
     static func image(for mode: Mode) -> NSImage {
-        if mode == .off {
-            let img = NSImage(systemSymbolName: "moon.stars", accessibilityDescription: "Sleep allowed")
-                ?? NSImage(size: NSSize(width: 20, height: 18))
-            img.isTemplate = true
-            return img
-        }
         let img = NSImage(size: NSSize(width: 20, height: 18), flipped: false) { _ in
             NSColor.black.set()
-            if mode == .awake { drawLaptopWithSunBehind() } else { drawClosedLaptopWithSun() }
+            switch mode {
+            case .off: drawMoonStars()
+            case .awake: drawLaptopWithSunBehind()
+            case .lid: drawClosedLaptopWithSun()
+            }
             return true
         }
         img.isTemplate = true
         return img
+    }
+
+    /// SF Symbol moon, centred on the same 20x18 canvas as the other icons so the status item never changes width.
+    private static func drawMoonStars() {
+        let cfg = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        guard let sym = NSImage(systemSymbolName: "moon.stars", accessibilityDescription: nil)?.withSymbolConfiguration(cfg) else { return }
+        let size = sym.size
+        sym.draw(in: NSRect(x: (20 - size.width) / 2, y: (18 - size.height) / 2, width: size.width, height: size.height))
     }
 
     private static func drawSun(center c: NSPoint, radius r: CGFloat, rayFrom: CGFloat, rayTo: CGFloat, skipping skip: Set<Int> = []) {
@@ -35,7 +41,7 @@ enum Icons {
     }
 
     private static func drawLaptopWithSunBehind() {
-        drawSun(center: NSPoint(x: 14.2, y: 12.4), radius: 2.7, rayFrom: 4.1, rayTo: 5.4)
+        drawSun(center: NSPoint(x: 13.6, y: 12.2), radius: 2.6, rayFrom: 3.9, rayTo: 5.0)
         let screen = NSRect(x: 1.6, y: 5.6, width: 12.2, height: 8)
         let base = NSRect(x: 0.4, y: 2.4, width: 15.4, height: 2.4)
         // knock out a gap around the laptop so the sun reads as "behind" it
@@ -69,6 +75,6 @@ enum Icons {
             NSBezierPath(ovalIn: NSRect(x: 8.4, y: 5.1, width: 3.2, height: 3.2)).fill()
             ctx.restoreGState()
         }
-        drawSun(center: NSPoint(x: 10, y: 14.2), radius: 2.3, rayFrom: 3.7, rayTo: 5.0, skipping: [5, 6, 7])
+        drawSun(center: NSPoint(x: 10, y: 12.4), radius: 2.3, rayFrom: 3.7, rayTo: 4.9, skipping: [5, 6, 7])
     }
 }
