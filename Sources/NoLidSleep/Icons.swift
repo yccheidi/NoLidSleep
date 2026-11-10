@@ -6,8 +6,8 @@ import AppKit
 ///  lid   - closed laptop with a sun above it
 enum Icons {
     static func image(for mode: Mode) -> NSImage {
-        // Drawn on a 20x18 grid, shown at 85% so the status item can be narrow.
-        let scale: CGFloat = 0.85
+        // Drawn on a 20x18 grid, shown at 95% so the status item can be narrow.
+        let scale: CGFloat = 0.95
         let img = NSImage(size: NSSize(width: 20 * scale, height: 18 * scale), flipped: false) { _ in
             NSGraphicsContext.current?.cgContext.scaleBy(x: scale, y: scale)
             NSColor.black.set()

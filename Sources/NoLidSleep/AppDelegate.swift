@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
-        statusItem.length = 22   // fixed width: icons never make the menu bar shift
+        statusItem.length = 24   // fixed width: icons never make the menu bar shift
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(statusClicked(_:))
