@@ -1,7 +1,7 @@
 import AppKit
 
 /// Menu bar template icons, one per mode:
-///  off   - moon and stars (SF Symbol)
+///  off   - crescent moon with sparkles
 ///  awake - open laptop with a sun behind it
 ///  lid   - closed laptop with a sun above it
 enum Icons {
@@ -22,16 +22,30 @@ enum Icons {
         return img
     }
 
-    /// Filled SF Symbol moon, scaled to fill the 20x18 canvas.
+    /// Solid crescent moon with two sparkles, drawn to fill the whole 20x18 canvas.
     private static func drawMoonStars() {
-        let cfg = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
-        guard let sym = (NSImage(systemSymbolName: "moon.stars.fill", accessibilityDescription: nil)
-                         ?? NSImage(systemSymbolName: "moon.stars", accessibilityDescription: nil))?
-            .withSymbolConfiguration(cfg) else { return }
-        let sz = sym.size
-        let k = min(19.5 / sz.width, 17.5 / sz.height)
-        let w = sz.width * k, h = sz.height * k
-        sym.draw(in: NSRect(x: (20 - w) / 2, y: (18 - h) / 2, width: w, height: h))
+        NSBezierPath(ovalIn: NSRect(x: 0.2, y: 1.0, width: 16.4, height: 16.4)).fill()
+        if let ctx = NSGraphicsContext.current?.cgContext {
+            ctx.saveGState()
+            ctx.setBlendMode(.clear)
+            NSBezierPath(ovalIn: NSRect(x: 5.0, y: 3.8, width: 14.0, height: 14.0)).fill()
+            ctx.restoreGState()
+        }
+        sparkle(center: NSPoint(x: 14.6, y: 10.6), radius: 3.4)
+        sparkle(center: NSPoint(x: 10.0, y: 14.8), radius: 2.0)
+    }
+
+    /// Four-pointed star.
+    private static func sparkle(center c: NSPoint, radius r: CGFloat) {
+        let k = r * 0.28
+        let p = NSBezierPath()
+        p.move(to: NSPoint(x: c.x, y: c.y + r))
+        p.curve(to: NSPoint(x: c.x + r, y: c.y), controlPoint1: NSPoint(x: c.x + k, y: c.y + k), controlPoint2: NSPoint(x: c.x + k, y: c.y + k))
+        p.curve(to: NSPoint(x: c.x, y: c.y - r), controlPoint1: NSPoint(x: c.x + k, y: c.y - k), controlPoint2: NSPoint(x: c.x + k, y: c.y - k))
+        p.curve(to: NSPoint(x: c.x - r, y: c.y), controlPoint1: NSPoint(x: c.x - k, y: c.y - k), controlPoint2: NSPoint(x: c.x - k, y: c.y - k))
+        p.curve(to: NSPoint(x: c.x, y: c.y + r), controlPoint1: NSPoint(x: c.x - k, y: c.y + k), controlPoint2: NSPoint(x: c.x - k, y: c.y + k))
+        p.close()
+        p.fill()
     }
 
     private static func drawSun(center c: NSPoint, radius r: CGFloat, rayFrom: CGFloat, rayTo: CGFloat, skipping skip: Set<Int> = []) {
